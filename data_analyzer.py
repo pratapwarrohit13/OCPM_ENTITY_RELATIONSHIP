@@ -10,6 +10,11 @@ from typing import List, Dict, Tuple, Any
 LOG_FILE = "analyzer_debug.log"
 SUPPORTED_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.tsv', '.txt'}
 
+# [CONFIG] Set your folder path here to avoid typing it every time.
+# Example: INPUT_DIRECTORY = r"C:\Users\MyName\Documents\Data"
+INPUT_DIRECTORY = r"" 
+
+
 def validate_file_extension(file_path: str):
     """
     Validates if the file extension is supported.
@@ -185,8 +190,14 @@ def main():
     
     try:
         # 1. Get Input Directory
-        input_path = input("Enter the directory path containing CSV/Excel files: ").strip()
-        input_path = input_path.strip('"').strip("'") 
+        # Use config variable if set, otherwise ask user
+        if INPUT_DIRECTORY and os.path.isdir(INPUT_DIRECTORY):
+             input_path = INPUT_DIRECTORY
+             logging.info(f"Using configured input directory: {input_path}")
+             print(f"[INFO] Using configured directory: {input_path}")
+        else:
+             input_path = input("Enter the directory path containing CSV/Excel files: ").strip()
+             input_path = input_path.strip('"').strip("'") 
 
         if not os.path.isdir(input_path):
             logging.error(f"Invalid directory path: {input_path}")
