@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.xlsx
+*.log
+.gemini/
+test_data*/
+test_validation_fail/
+test_logging*/
+test_supported/
+test_unsupported/
