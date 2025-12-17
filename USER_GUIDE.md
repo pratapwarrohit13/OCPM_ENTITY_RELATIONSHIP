@@ -1,43 +1,80 @@
-# Data Relationship Analyzer - User Guide
+# 📊 OCPM Data Relationship Analyzer - User Guide
 
-This tool helps you understand the structure of your data by analyzing CSV, Excel, TSV, and TXT files in a directory. It automatically detects:
-1. **Primary Keys**: Columns that uniquely identify rows.
-2. **Relationships**: Connections between tables (Foreign Keys).
-3. **Cardinality**: Whether a relationship is One-to-One (1:1) or Many-to-One (n:1).
-4. **Date Columns**: Fields that contain date/time information.
+Hello there! 👋 Welcome to the **Data Relationship Analyzer**. 
 
-## How to Use
+This tool helps you automatically discover relationships between your data tables. Simply upload your files, and we'll do the heavy lifting to find Primary Keys, Foreign Keys, and how your tables connect! 🚀
 
-### 1. Prerequisites
-Ensure you have Python installed. Install the required libraries:
-```bash
-pip install pandas openpyxl
-```
+---
 
-### 2. Run the Analyzer
-Open your terminal or command prompt and run:
-```bash
-python data_analyzer.py
-```
+## 📂 Supported Data Formats
 
-### 3. Provide Input
-When prompted, paste the full path to the folder containing your data files.
-*Example*: `C:\Users\MyName\Documents\ProjectData`
+We support a wide range of file formats to make your life easier:
+*   **Excel** (`.xlsx`, `.xls`)
+*   **CSV** (`.csv`)
+*   **JSON** (`.json`) ✨ *New!*
+*   **Tab-Separated** (`.tsv`)
+*   **Text** (`.txt`)
 
-### 4. View Results
-The tool will generate an Excel file named **`relationship_report.xlsx`** in the same folder.
-Open it to see:
-- **Relationships Tab**: Shows which tables are linked and how.
-- **Primary Keys Tab**: Lists the candidate primary keys for each file.
-- **Date Columns Tab**: Shows detected date fields.
+---
 
-## Troubleshooting
+## 🚀 How to Run the App
 
-- **"No data loaded"**: Check if your files represent tabular data (CSV/Excel) and are not corrupted.
-- **"Separation failed"**: For `.txt` files, ensure they are comma or tab separated.
-- **Permission Errors**: Close the `relationship_report.xlsx` file if it's open in Excel before running the tool again.
+1.  Open your terminal or command prompt.
+2.  Navigate to the project folder.
+3.  Run the following command:
+    ```bash
+    python app.py
+    ```
+4.  Open your web browser and go to: `http://127.0.0.1:5000`
 
-## Features
-- **Supports Multiple Formats**: `.csv`, `.xlsx`, `.xls`, `.tsv`, `.txt`.
-- **Automatic Date Detection**: Scans potential date columns.
-- **Smart Logic**: Infers relationships based on data matching (subset logic).
+---
+
+## 🛠️ Using the Tool
+
+### 1. Upload Your Files
+*   Click the **"Choose Files"** button.
+*   Select one or multiple files from your computer.
+*   Click **"Upload and Analyze"** button. 
+*   *Tip: You can select multiple CSVs, JSONs, or Excel sheets at once!*
+
+### 2. Explore Your Results 🔍
+Once the analysis is done, you'll see a beautiful dashboard:
+
+*   **Inferred Relationships Table**:
+    *   This is the star of the show! ⭐ It shows which tables are acting as parents and children.
+    *   **SQL Join Query**: We generate the exact SQL `JOIN` syntax for you.
+    *   **Copy Button**: Click the little "Copy" button next to the SQL query to paste it directly into your database tool! 📋
+
+*   **Filter Results**:
+    *   Use the dropdown menu at the top to filter rows by specific tables. This also filters the SQL queries!
+
+*   **Other Insights**:
+    *   **Primary Key Candidates**: Potential unique identifiers for your tables.
+    *   **Date Columns**: We identify which columns look like dates. 📅
+
+### 3. Download Reports 📥
+Want to take your data to go?
+*   **Download Excel Report**: Get a full spreadsheet of the analysis.
+*   **Download JSON Relationship**: Get the raw relationship data.
+*   **Download PDF**: Get a clean, professional PDF report of the current view. 📄
+
+### 4. Start Over (Reset) 🔄
+*   Click the **"Home"** button in the top right corner. 🏠
+*   This will **clear your session**, remove the uploaded files, and let you start fresh with a clean slate.
+
+---
+
+## 🧐 Troubleshooting
+
+**Q: I clicked "Upload" but nothing happened?**
+A: Make sure you selected at least one valid file! If valid, check the terminal for any error messages.
+
+**Q: My JSON file isn't working!**
+A: Ensure your JSON is structured as a list of records (e.g., `[{"id": 1, "name": "A"}, ...]`). Complex nested structures might need to be flattened first.
+
+**Q: The relationships look wrong.**
+A: The tool guesses relationships based on column names (like `CustomerID` matching `ID`) and data overlap. It's a helper, so always double-check with your domain knowledge! 🧠
+
+---
+
+**Happy Analyzing!** 🎉

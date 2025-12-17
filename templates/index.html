@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celonis OCPM Data Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+
+        .upload-area {
+            display: block;
+            /* Ensure it behaves as a block */
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            display: block;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .file-list {
+            margin-top: 10px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .flash-messages {
+            color: red;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Results Styles */
+        .results-section {
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        h2 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            color: #555;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .btn-group {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-download {
+            background-color: #28a745;
+            margin: 5px;
+            padding: 10px 15px;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-download:hover {
+            background-color: #218838;
+            opacity: 0.9;
+        }
+
+        .btn-blue {
+            background-color: #17a2b8;
+        }
+
+        .btn-orange {
+            background-color: #fd7e14;
+        }
+
+        .filter-controls {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        .empty-msg {
+            font-style: italic;
+            color: #777;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-text {
+            font-size: 18px;
+            color: #d9534f;
+            margin-top: 15px;
+        }
+
+        /* Loader Overlay */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 2000;
+            text-align: center;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20% auto 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            font-size: 20px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .home-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+
+    <body>
+        <a href="/reset" class="home-btn">Home</a>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay">
+            <div class="loader"></div>
+            <div class="loader-text">Analyzing Files... Please wait.</div>
+        </div>
+
+        <!-- The Modal -->
+        <div id="errorModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 style="color: #d9534f; border-bottom: none; margin-top: 0;">Error</h2>
+                <p id="modalMessage" class="modal-text"></p>
+                <button class="btn" style="width: 100px; margin: 20px auto 0;" onclick="closeModal()">OK</button>
+            </div>
+        </div>
+        <div class="container">
+            <h1>Celonis OCPM Data Analyzer</h1>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var messages = {{ messages | tojson | safe
+                }};
+                if (messages && messages.length > 0) {
+                    var modal = document.getElementById("errorModal");
+                    var msgP = document.getElementById("modalMessage");
+                    msgP.innerText = messages.join("\n");
+                    modal.style.display = "block";
+                }
+            });
+
+                function closeModal() {
+                    var modal = document.getElementById("errorModal");
+                    modal.style.display = "none";
+                }
+            </script>
+            {% else %}
+            <script>
+                function closeModal() {
+                    var modal = document.getElementById("errorModal");
+                    modal.style.display = "none";
+                }
+            </script>
+            {% endif %}
+            {% endwith %}
+
+            <form action="/analyze" method="post" enctype="multipart/form-data">
+                <label class="upload-area" for="files">
+                    <span id="upload-text">Drag & Drop files here or Click to Browse</span>
+                    <input type="file" name="files" id="files" multiple required onchange="updateList()">
+                </label>
+                <div id="file-list" class="file-list"></div>
+                <button type="submit" class="btn">Analyze Files</button>
+            </form>
+
+            <script>
+                document.querySelector('form').addEventListener('submit', function (e) {
+                    var files = document.getElementById('files').files;
+                    if (files.length > 0) {
+                        document.getElementById('loadingOverlay').style.display = 'block';
+                    }
+                });
+            </script>
+
+            {% if analysis_done %}
+            <div class="results-section">
+                <h1 style="font-size: 1.5em; margin-bottom: 20px;">Analysis Results</h1>
+
+                <div class="btn-group">
+                    <a href="{{ url_for('download_excel') }}" class="btn-download">Download
+                        Excel</a>
+                    <a href="{{ url_for('download_json') }}" class="btn-download btn-blue">Download
+                        JSON</a>
+                    <button onclick="downloadPDF()" class="btn-download btn-orange">Download PDF</button>
+                </div>
+
+                <h2>Inferred Relationships</h2>
+                {% if relationships %}
+
+                <div class="filter-controls">
+                    <label for="tableFilter">Filter by Table: </label>
+                    <select id="tableFilter" onchange="filterRelationships()">
+                        <option value="all">All Tables</option>
+                        <!-- Options populated by JS or simple loop if we knew them ahead of time, but JS is better for dynamic list from the table -->
+                    </select>
+                </div>
+
+                <table id="relTable">
+                    <thead>
+                        <tr>
+                            <th>Child Table</th>
+                            <th>Child Column (FK)</th>
+                            <th>Parent Table</th>
+                            <th>Parent Column (PK)</th>
+                            <th>Cardinality</th>
+                            <th style="width: 30%;">SQL Join Query</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rel in relationships %}
+                        <tr class="rel-row" data-child="{{ rel['Child Table'] }}"
+                            data-parent="{{ rel['Parent Table'] }}">
+                            <td>{{ rel['Child Table'] }}</td>
+                            <td>{{ rel['Child Column (FK)'] }}</td>
+                            <td>{{ rel['Parent Table'] }}</td>
+                            <td>{{ rel['Parent Column (PK)'] }}</td>
+                            <td>{{ rel['Cardinality'] }}</td>
+                            <td style="position: relative;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <pre
+                                        style="margin: 0; white-space: pre-wrap; font-size: 11px; max-height: 60px; overflow-y: auto; flex-grow: 1;"><code>{{ rel.sql_query }}</code></pre>
+                                    <button onclick="copyToClipboard(this)"
+                                        style="margin-left: 5px; padding: 2px 5px; font-size: 10px; cursor: pointer;">Copy</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-msg">No relationships detected.</p>
+                {% endif %}
+
+                <h2>Primary Key Candidates</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Potential Primary Keys</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in primary_keys %}
+                        <tr class="pk-row" data-table="{{ item['Table'] }}">
+                            <td>{{ item['Table'] }}</td>
+                            <td>{{ item['Keys'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h2>Date Columns</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Detected Date Columns</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in date_columns %}
+                        <tr class="date-row" data-table="{{ item['File Name'] }}">
+                            <td>{{ item['File Name'] }}</td>
+                            <td>{{ item['Date Columns'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if join_queries %}
+                <h2>Generated SQL Join Queries</h2>
+                <div id="sqlQueriesSection">
+                    {% for query in join_queries %}
+                    <div class="query-row" data-child="{{ query.child_table }}" data-parent="{{ query.parent_table }}"
+                        style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px; position: relative;">
+                        <pre
+                            style="margin: 0; white-space: pre-wrap; font-family: Consolas, monospace;"><code>{{ query.sql }}</code></pre>
+                        <button onclick="copyToClipboard(this)"
+                            style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Copy</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <script>
+                    function copyToClipboard(btn) {
+                        const codeBlock = btn.previousElementSibling.innerText;
+                        navigator.clipboard.writeText(codeBlock).then(() => {
+                            const originalText = btn.innerText;
+                            btn.innerText = "Copied!";
+                            setTimeout(() => btn.innerText = originalText, 2000);
+                        });
+                    }
+                </script>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <script>
+            function updateList() {
+                var input = document.getElementById('files');
+                var output = document.getElementById('file-list');
+                var children = "";
+                for (var i = 0; i < input.files.length; ++i) {
+                    children += '<li>' + input.files.item(i).name + '</li>';
+                }
+                output.innerHTML = '<ul>' + children + '</ul>';
+                document.getElementById('upload-text').innerText = input.files.length + " files selected";
+            }
+
+            // Dropdown Filter Logic
+            document.addEventListener('DOMContentLoaded', function () {
+                // Populate Dropdown
+                const rows = document.querySelectorAll('.rel-row');
+                const select = document.getElementById('tableFilter');
+
+                if (rows.length > 0 && select) {
+                    const tables = new Set();
+                    rows.forEach(row => {
+                        tables.add(row.getAttribute('data-child'));
+                        tables.add(row.getAttribute('data-parent'));
+                    });
+
+                    // Clear existing options except "All Tables"
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+
+                    tables.forEach(table => {
+                        if (table) {
+                            const option = document.createElement('option');
+                            option.value = table;
+                            option.innerText = table;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            });
+
+            function filterRelationships() {
+                const select = document.getElementById('tableFilter');
+                const filter = select.value;
+
+                // Filter Relationships
+                const relRows = document.querySelectorAll('.rel-row');
+                relRows.forEach(row => {
+                    const child = row.getAttribute('data-child');
+                    // const parent = row.getAttribute('data-parent'); // User requested filtering strictly by child column
+                    if (filter === 'all' || child === filter) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Filter Primary Keys
+                const pkRows = document.querySelectorAll('.pk-row');
+                pkRows.forEach(row => {
+                    const table = row.getAttribute('data-table');
+                    if (filter === 'all' || table === filter) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Filter Date Columns
+                const dateRows = document.querySelectorAll('.date-row');
+                dateRows.forEach(row => {
+                    const table = row.getAttribute('data-table');
+                    if (filter === 'all' || table === filter) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Filter SQL Queries
+                const queryRows = document.querySelectorAll('.query-row');
+                queryRows.forEach(row => {
+                    const child = row.getAttribute('data-child');
+                    const parent = row.getAttribute('data-parent');
+                    if (filter === 'all' || child === filter || parent === filter) {
+                        row.style.display = 'block';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            function downloadPDF() {
+                const element = document.body;
+                const opt = {
+                    margin: [10, 10, 10, 10],
+                    filename: 'analysis_report.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Temporarily hide buttons for the PDF
+                const btns = document.querySelectorAll('.btn, .btn-download, .upload-area, .home-btn');
+                btns.forEach(b => b.style.display = 'none');
+
+                html2pdf().set(opt).from(element).save().then(() => {
+                    // Restore buttons
+                    btns.forEach(b => b.style.display = '');
+                });
+            }
+        </script>
+    </body>
+
+</html>

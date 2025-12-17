@@ -2,13 +2,14 @@ import pandas as pd
 import os
 import glob
 import logging
+import json
 from typing import List, Dict, Tuple, Any
 
 # ==============================================================================
 # CONSTANTS
 # ==============================================================================
 LOG_FILE = "analyzer_debug.log"
-SUPPORTED_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.tsv', '.txt'}
+SUPPORTED_EXTENSIONS = {'.csv', '.xlsx', '.xls', '.tsv', '.txt', '.json'}
 
 # [CONFIG] Set your folder path here to avoid typing it every time.
 # Example: INPUT_DIRECTORY = r"C:\Users\MyName\Documents\Data"
@@ -41,6 +42,8 @@ def load_data(file_paths: List[str]) -> Dict[str, pd.DataFrame]:
                 df = pd.read_excel(path)
             elif path.endswith('.tsv'):
                 df = pd.read_csv(path, sep='\t')
+            elif path.endswith('.json'):
+                df = pd.read_json(path)
             elif path.endswith('.txt'):
                 try:
                     df = pd.read_csv(path, sep=None, engine='python')
@@ -139,6 +142,35 @@ def analyze_relationships(dataframes: Dict[str, pd.DataFrame]):
                         if not child_vals:
                              continue
 
+                        # --- Heuristic Name Check ---
+                        # To avoid false positives (e.g. 'quantity' -> 'customer_id'), ensure names are related.
+                        # 1. Exact Match: child_col == parent_pk (e.g. region_id == region_id)
+                        # 2. Convention: child_col contains parent_table name (e.g. customer_id contains 'customer')
+                        parent_table_simple = os.path.splitext(parent_file)[0].lower().replace("s", "") # remove plural 's' simply
+                        child_col_lower = col.lower()
+                        pk_lower = pk.lower()
+                        
+                        is_name_match = (
+                            child_col_lower == pk_lower or 
+                            parent_table_simple in child_col_lower or
+                            (pk_lower == "id" and child_col_lower.endswith("_id"))
+                        )
+                        
+                        if not is_name_match:
+                             continue
+                        
+                        # --- Heuristic Data Type Check ---
+                        # Ensure types are compatible (e.g. don't match Int with Object/String)
+                        child_dtype = df_child[col].dtype
+                        parent_dtype = df_parent[pk].dtype
+                        
+                        is_child_numeric = pd.api.types.is_numeric_dtype(child_dtype)
+                        is_parent_numeric = pd.api.types.is_numeric_dtype(parent_dtype)
+                        
+                        if is_child_numeric != is_parent_numeric:
+                             continue
+                        # ---------------------------------
+
                         # DEBUG: subset check
                         if child_vals.issubset(parent_vals):
                             # Relationship Found!
@@ -166,6 +198,124 @@ def analyze_relationships(dataframes: Dict[str, pd.DataFrame]):
     logging.info(f"Relationship analysis complete. Found {len(relationships)} relationships.")
     return table_pks, relationships
 
+
+def generate_join_queries(relationships: List[Dict]) -> List[Dict]:
+    """
+    Generates SQL JOIN queries based on inferred relationships.
+    Returns a list of dicts: {'sql': str, 'child_table': str, 'parent_table': str}
+    """
+    queries = []
+    for rel in relationships:
+        child = rel['Child Table']
+        parent = rel['Parent Table']
+        child_clean_name = child.split('.')[0]
+        parent_clean_name = parent.split('.')[0]
+        child_col = rel['Child Column (FK)']
+        parent_col = rel['Parent Column (PK)']
+        
+        # Clean names for SQL safety (basic)
+        child_clean = child_clean_name.replace(" ", "_")
+        parent_clean = parent_clean_name.replace(" ", "_")
+        
+        query_sql = f"SELECT *\nFROM {child_clean}\nJOIN {parent_clean} ON {child_clean}.{child_col} = {parent_clean}.{parent_col};"
+        
+        queries.append({
+            'sql': query_sql,
+            'child_table': child,
+            'parent_table': parent
+        })
+    
+    return queries
+
+
+def generate_excel_report(relationships: List[Dict], table_pks: Dict[str, List[str]], date_info: List[Dict], output_file: str):
+    """
+    Generates the Excel report from analysis data.
+    """
+    logging.info(f"Saving report to: {output_file}")
+    
+    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        # Sheet A: Relationships
+        if relationships:
+            rel_df = pd.DataFrame(relationships)
+        else:
+            rel_df = pd.DataFrame(columns=["Child Table", "Child Column (FK)", "Parent Table", "Parent Column (PK)", "Cardinality"])
+            logging.warning("No relationships detected.")
+        
+        rel_df.to_excel(writer, sheet_name="Relationships", index=False)
+        
+        # Sheet B: Primary Keys and Date Columns
+        pk_data = [{"Table": name, "Primary Key Candidates": ", ".join(pks)} for name, pks in table_pks.items()]
+        pk_df = pd.DataFrame(pk_data)
+        pk_df.to_excel(writer, sheet_name="Primary Keys", index=False)
+        
+        date_df = pd.DataFrame(date_info)
+        date_df.to_excel(writer, sheet_name="Date Columns", index=False)
+
+def generate_json_report(relationships: List[Dict], table_pks: Dict[str, List[str]], date_info: List[Dict], output_file: str):
+    """
+    Generates a JSON report (structured data).
+    """
+    logging.info(f"Saving JSON report to: {output_file}")
+    data = {
+        "relationships": relationships,
+        "primary_keys": table_pks,
+        "date_columns": date_info
+    }
+    with open(output_file, 'w') as f:
+        json.dump(data, f, indent=4)
+
+def generate_sql_ddl(dataframes: Dict[str, pd.DataFrame], table_pks: Dict[str, List[str]], relationships: List[Dict], output_file: str):
+    """
+    Generates a SQL DDL file to create tables and constraints.
+    """
+    logging.info(f"Saving SQL DDL to: {output_file}")
+    
+    statements = []
+    
+    # helper for mapping pandas types to SQL
+    def map_dtype(dtype):
+        if pd.api.types.is_integer_dtype(dtype): return "INT"
+        if pd.api.types.is_float_dtype(dtype): return "FLOAT"
+        if pd.api.types.is_bool_dtype(dtype): return "BOOLEAN"
+        if pd.api.types.is_datetime64_any_dtype(dtype): return "TIMESTAMP"
+        return "VARCHAR(255)" # default
+
+    # Create Tables
+    for table_name, df in dataframes.items():
+        clean_table_name = os.path.splitext(table_name)[0].replace(" ", "_").replace("-", "_")
+        cols_def = []
+        
+        # Columns
+        for col in df.columns:
+            clean_col = col.replace(" ", "_").replace("-", "_")
+            sql_type = map_dtype(df[col].dtype)
+            cols_def.append(f"    {clean_col} {sql_type}")
+        
+        # Primary Keys
+        pks = table_pks.get(table_name, [])
+        if pks:
+            clean_pks = [pk.replace(" ", "_") for pk in pks]
+            cols_def.append(f"    PRIMARY KEY ({', '.join(clean_pks)})")
+            
+        create_stmt = f"CREATE TABLE {clean_table_name} (\n" + ",\n".join(cols_def) + "\n);"
+        statements.append(create_stmt)
+        
+    statements.append("") # Spacer
+    
+    # Foreign Keys (Alter Table)
+    for rel in relationships:
+        child_table = os.path.splitext(rel['Child Table'])[0].replace(" ", "_")
+        child_col = rel['Child Column (FK)'].replace(" ", "_")
+        parent_table = os.path.splitext(rel['Parent Table'])[0].replace(" ", "_")
+        parent_col = rel['Parent Column (PK)'].replace(" ", "_")
+        
+        fk_stmt = f"ALTER TABLE {child_table} ADD FOREIGN KEY ({child_col}) REFERENCES {parent_table}({parent_col});"
+        statements.append(fk_stmt)
+
+    with open(output_file, 'w') as f:
+        f.write("\n".join(statements))
+
 def main():
     # Setup Logging
     logging.basicConfig(
@@ -182,10 +332,10 @@ def main():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    logging.info("Starting Data Relationship Analyzer Tool")
+    logging.info("Starting Celonis OCPM Data Analyzer")
     
     print("===========================================")
-    print("   DATA RELATIONSHIP ANALYZER TOOL")
+    print("   CELONIS OCPM DATA ANALYZER")
     print("===========================================")
     
     try:
@@ -254,28 +404,8 @@ def main():
 
         # 6. Export Report
         output_file = os.path.join(input_path, "relationship_report.xlsx")
-        logging.info(f"Saving report to: {output_file}")
-        print(f"[INFO] Saving report to: {output_file}")
+        generate_excel_report(relationships, table_pks, date_info, output_file)
         
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-            # Sheet A: Relationships
-            if relationships:
-                rel_df = pd.DataFrame(relationships)
-            else:
-                rel_df = pd.DataFrame(columns=["Child Table", "Child Column (FK)", "Parent Table", "Parent Column (PK)", "Cardinality"])
-                logging.warning("No relationships detected.")
-                print("[WARN] No relationships detected.")
-            
-            rel_df.to_excel(writer, sheet_name="Relationships", index=False)
-            
-            # Sheet B: Primary Keys and Date Columns can be separate or combined.
-            pk_data = [{"Table": name, "Primary Key Candidates": ", ".join(pks)} for name, pks in table_pks.items()]
-            pk_df = pd.DataFrame(pk_data)
-            pk_df.to_excel(writer, sheet_name="Primary Keys", index=False)
-            
-            date_df = pd.DataFrame(date_info)
-            date_df.to_excel(writer, sheet_name="Date Columns", index=False)
-            
         logging.info("Analysis complete.")
         print("[SUCCESS] Analysis complete! Check the report file.")
         
