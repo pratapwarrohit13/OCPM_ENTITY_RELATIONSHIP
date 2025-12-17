@@ -549,22 +549,29 @@
             }
 
             function downloadPDF() {
-                const element = document.body;
+                // Select the specific results section to avoid capturing the whole body (nav bar etc)
+                // But user wants "report", so body is fine if we hide non-report elements.
+                const element = document.querySelector('.results-section') || document.body;
+
                 const opt = {
-                    margin: [10, 10, 10, 10],
+                    margin: [5, 5, 5, 5], // Tighter margins
                     filename: 'analysis_report.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // Landscape for wide tables
                 };
 
-                // Temporarily hide buttons for the PDF
-                const btns = document.querySelectorAll('.btn, .btn-download, .upload-area, .home-btn');
-                btns.forEach(b => b.style.display = 'none');
+                // Hide interactive elements
+                const btns = document.querySelectorAll('.btn, .btn-download, .upload-area, .home-btn, .filter-controls, button');
+                btns.forEach(b => b.classList.add('pdf-hidden'));
+                const style = document.createElement('style');
+                style.innerHTML = '.pdf-hidden { display: none !important; } .results-section { border: none; margin-top: 0; } body { padding: 0; background: white; }';
+                document.head.appendChild(style);
 
-                html2pdf().set(opt).from(element).save().then(() => {
-                    // Restore buttons
-                    btns.forEach(b => b.style.display = '');
+                html2pdf().set(opt).from(document.body).save().then(() => {
+                    // Restore
+                    btns.forEach(b => b.classList.remove('pdf-hidden'));
+                    document.head.removeChild(style);
                 });
             }
         </script>
