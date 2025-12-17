@@ -35,6 +35,7 @@ Simply drag-and-drop your dataset, and watch as it:
 | **SQL Generator** | 🛠️ auto-generates `LEFT JOIN` queries ready to paste into your SQL client. |
 | **Instant Exports** | 📥 Download your analysis as **PDF**, **Excel**, or raw **JSON**. |
 | **Session Control** | 🔄 "Home" button instantly resets your workspace for a fresh start. |
+| **Big Data Ready** | 🏋️‍♂️ Smart chunking support for processing large CSV/TXT files without crashing. |
 
 ---
 

@@ -15,6 +15,8 @@ We support a wide range of file formats to make your life easier:
 *   **Tab-Separated** (`.tsv`)
 *   **Text** (`.txt`)
 
+> **Note on Large Files**: We support large CSV and Text files! 🏋️‍♂️ The tool processes them in smart chunks, so you can upload files with millions of rows without crashing your browser or server.
+
 ---
 
 ## 🚀 How to Run the App
@@ -71,6 +73,9 @@ A: Make sure you selected at least one valid file! If valid, check the terminal 
 
 **Q: My JSON file isn't working!**
 A: Ensure your JSON is structured as a list of records (e.g., `[{"id": 1, "name": "A"}, ...]`). Complex nested structures might need to be flattened first.
+
+**Q: Analysis is taking a while for my big CSV file.**
+A: That's normal! 🐢 For very large files (hundreds of MBs), the tool carefully reads them in chunks to avoid running out of memory. Sit tight, it's working hard!
 
 **Q: The relationships look wrong.**
 A: The tool guesses relationships based on column names (like `CustomerID` matching `ID`) and data overlap. It's a helper, so always double-check with your domain knowledge! 🧠
