@@ -233,96 +233,11 @@ def analyze_relationships(tables: Dict[str, AnalyzedTable]):
     logging.info(f"Relationship analysis complete. Found {len(relationships)} relationships.")
     return table_pks, relationships
 
-def generate_join_queries(relationships: List[Dict]) -> List[Dict]:
-    """
-    Generates SQL JOIN queries based on inferred relationships.
-    """
-    queries = []
-    for rel in relationships:
-        child = rel['Child Table']
-        parent = rel['Parent Table']
-        child_clean = child.split('.')[0].replace(" ", "_").replace("-", "_")
-        parent_clean = parent.split('.')[0].replace(" ", "_").replace("-", "_")
-        child_col = rel['Child Column (FK)']
-        parent_col = rel['Parent Column (PK)']
-        
-        query_sql = f"SELECT *\\nFROM {child_clean}\\nJOIN {parent_clean} ON {child_clean}.{child_col} = {parent_clean}.{parent_col};"
-        
-        # Use simple newline for clarity
-        query_sql = f"SELECT *\\nFROM {child_clean}\\nJOIN {parent_clean} ON {child_clean}.{child_col} = {parent_clean}.{parent_col};"
-        
-        queries.append({
-            'sql': query_sql,
-            'child_table': child,
-            'parent_table': parent
-        })
-    return queries
 
-def generate_excel_report(relationships: List[Dict], table_pks: Dict[str, List[str]], date_info: List[Dict], output_file: str):
-    logging.info(f"Saving report to: {output_file}")
-    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-        if relationships:
-            rel_df = pd.DataFrame(relationships)
-        else:
-            rel_df = pd.DataFrame(columns=["Child Table", "Child Column (FK)", "Parent Table", "Parent Column (PK)", "Cardinality"])
-        
-        rel_df.to_excel(writer, sheet_name="Relationships", index=False)
-        
-        pk_data = [{"Table": name, "Primary Key Candidates": ", ".join(pks)} for name, pks in table_pks.items()]
-        pd.DataFrame(pk_data).to_excel(writer, sheet_name="Primary Keys", index=False)
-        pd.DataFrame(date_info).to_excel(writer, sheet_name="Date Columns", index=False)
 
-def generate_json_report(relationships: List[Dict], table_pks: Dict[str, List[str]], date_info: List[Dict], output_file: str):
-    logging.info(f"Saving JSON report to: {output_file}")
-    data = {"relationships": relationships, "primary_keys": table_pks, "date_columns": date_info}
-    with open(output_file, 'w') as f:
-        json.dump(data, f, indent=4)
 
-def generate_sql_ddl(tables: Dict[str, AnalyzedTable], table_pks: Dict[str, List[str]], relationships: List[Dict], output_file: str):
-    """
-    Generates a SQL DDL file to create tables and constraints.
-    """
-    logging.info(f"Saving SQL DDL to: {output_file}")
-    
-    statements = []
-    
-    def map_dtype(dtype):
-        if pd.api.types.is_integer_dtype(dtype): return "INT"
-        if pd.api.types.is_float_dtype(dtype): return "FLOAT"
-        if pd.api.types.is_bool_dtype(dtype): return "BOOLEAN"
-        if pd.api.types.is_datetime64_any_dtype(dtype): return "TIMESTAMP"
-        return "VARCHAR(255)"
 
-    for table_name, table in tables.items():
-        clean_table_name = os.path.splitext(table_name)[0].replace(" ", "_").replace("-", "_")
-        cols_def = []
-        
-        for col in table.columns:
-            clean_col = col.replace(" ", "_").replace("-", "_")
-            sql_type = map_dtype(table.dtypes[col])
-            cols_def.append(f"    {clean_col} {sql_type}")
-        
-        pks = table_pks.get(table_name, [])
-        if pks:
-            clean_pks = [pk.replace(" ", "_") for pk in pks]
-            cols_def.append(f"    PRIMARY KEY ({', '.join(clean_pks)})")
-            
-        create_stmt = f"CREATE TABLE {clean_table_name} (\\n" + ",\\n".join(cols_def) + "\\n);"
-        statements.append(create_stmt)
-        
-    statements.append("")
-    
-    for rel in relationships:
-        child_table = os.path.splitext(rel['Child Table'])[0].replace(" ", "_")
-        child_col = rel['Child Column (FK)'].replace(" ", "_")
-        parent_table = os.path.splitext(rel['Parent Table'])[0].replace(" ", "_")
-        parent_col = rel['Parent Column (PK)'].replace(" ", "_")
-        
-        fk_stmt = f"ALTER TABLE {child_table} ADD FOREIGN KEY ({child_col}) REFERENCES {parent_table}({parent_col});"
-        statements.append(fk_stmt)
 
-    with open(output_file, 'w') as f:
-        f.write("\\n".join(statements))
 
 def main():
     logging.basicConfig(
@@ -380,15 +295,8 @@ def main():
                 "Date Columns": ", ".join(d_cols) if d_cols else "None"
             })
 
-        # Exports
-        output_file = os.path.join(input_path, "relationship_report.xlsx")
-        generate_excel_report(relationships, table_pks, date_info, output_file)
-        
-        ddl_file = os.path.join(input_path, "schema_script.sql")
-        generate_sql_ddl(tables, table_pks, relationships, ddl_file)
-        
         logging.info("Analysis complete.")
-        print("[SUCCESS] Analysis complete! Check the report files.")
+        print("[SUCCESS] Analysis complete! Check the console logs for details.")
         
     except Exception as e:
         logging.critical(f"Unexpected error: {e}", exc_info=True)

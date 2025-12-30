@@ -337,24 +337,12 @@
             <div class="results-section">
                 <h1 style="font-size: 1.5em; margin-bottom: 20px;">Analysis Results</h1>
 
-                <div class="btn-group">
-                    <a href="{{ url_for('download_excel') }}" class="btn-download">Download
-                        Excel</a>
-                    <a href="{{ url_for('download_json') }}" class="btn-download btn-blue">Download
-                        JSON</a>
-                    <button onclick="downloadPDF()" class="btn-download btn-orange">Download PDF</button>
-                </div>
+
 
                 <h2>Inferred Relationships</h2>
                 {% if relationships %}
 
-                <div class="filter-controls">
-                    <label for="tableFilter">Filter by Table: </label>
-                    <select id="tableFilter" onchange="filterRelationships()">
-                        <option value="all">All Tables</option>
-                        <!-- Options populated by JS or simple loop if we knew them ahead of time, but JS is better for dynamic list from the table -->
-                    </select>
-                </div>
+
 
                 <table id="relTable">
                     <thead>
@@ -364,7 +352,7 @@
                             <th>Parent Table</th>
                             <th>Parent Column (PK)</th>
                             <th>Cardinality</th>
-                            <th style="width: 30%;">SQL Join Query</th>
+
                         </tr>
                     </thead>
                     <tbody>
@@ -376,14 +364,7 @@
                             <td>{{ rel['Parent Table'] }}</td>
                             <td>{{ rel['Parent Column (PK)'] }}</td>
                             <td>{{ rel['Cardinality'] }}</td>
-                            <td style="position: relative;">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <pre
-                                        style="margin: 0; white-space: pre-wrap; font-size: 11px; max-height: 60px; overflow-y: auto; flex-grow: 1;"><code>{{ rel.sql_query }}</code></pre>
-                                    <button onclick="copyToClipboard(this)"
-                                        style="margin-left: 5px; padding: 2px 5px; font-size: 10px; cursor: pointer;">Copy</button>
-                                </div>
-                            </td>
+
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -428,30 +409,7 @@
                     </tbody>
                 </table>
 
-                {% if join_queries %}
-                <h2>Generated SQL Join Queries</h2>
-                <div id="sqlQueriesSection">
-                    {% for query in join_queries %}
-                    <div class="query-row" data-child="{{ query.child_table }}" data-parent="{{ query.parent_table }}"
-                        style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px; position: relative;">
-                        <pre
-                            style="margin: 0; white-space: pre-wrap; font-family: Consolas, monospace;"><code>{{ query.sql }}</code></pre>
-                        <button onclick="copyToClipboard(this)"
-                            style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 12px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Copy</button>
-                    </div>
-                    {% endfor %}
-                </div>
-                <script>
-                    function copyToClipboard(btn) {
-                        const codeBlock = btn.previousElementSibling.innerText;
-                        navigator.clipboard.writeText(codeBlock).then(() => {
-                            const originalText = btn.innerText;
-                            btn.innerText = "Copied!";
-                            setTimeout(() => btn.innerText = originalText, 2000);
-                        });
-                    }
-                </script>
-                {% endif %}
+
             </div>
             {% endif %}
         </div>
@@ -468,112 +426,11 @@
                 document.getElementById('upload-text').innerText = input.files.length + " files selected";
             }
 
-            // Dropdown Filter Logic
-            document.addEventListener('DOMContentLoaded', function () {
-                // Populate Dropdown
-                const rows = document.querySelectorAll('.rel-row');
-                const select = document.getElementById('tableFilter');
 
-                if (rows.length > 0 && select) {
-                    const tables = new Set();
-                    rows.forEach(row => {
-                        tables.add(row.getAttribute('data-child'));
-                        tables.add(row.getAttribute('data-parent'));
-                    });
 
-                    // Clear existing options except "All Tables"
-                    while (select.options.length > 1) {
-                        select.remove(1);
-                    }
 
-                    tables.forEach(table => {
-                        if (table) {
-                            const option = document.createElement('option');
-                            option.value = table;
-                            option.innerText = table;
-                            select.appendChild(option);
-                        }
-                    });
-                }
-            });
 
-            function filterRelationships() {
-                const select = document.getElementById('tableFilter');
-                const filter = select.value;
 
-                // Filter Relationships
-                const relRows = document.querySelectorAll('.rel-row');
-                relRows.forEach(row => {
-                    const child = row.getAttribute('data-child');
-                    // const parent = row.getAttribute('data-parent'); // User requested filtering strictly by child column
-                    if (filter === 'all' || child === filter) {
-                        row.style.display = 'table-row';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-
-                // Filter Primary Keys
-                const pkRows = document.querySelectorAll('.pk-row');
-                pkRows.forEach(row => {
-                    const table = row.getAttribute('data-table');
-                    if (filter === 'all' || table === filter) {
-                        row.style.display = 'table-row';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-
-                // Filter Date Columns
-                const dateRows = document.querySelectorAll('.date-row');
-                dateRows.forEach(row => {
-                    const table = row.getAttribute('data-table');
-                    if (filter === 'all' || table === filter) {
-                        row.style.display = 'table-row';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-
-                // Filter SQL Queries
-                const queryRows = document.querySelectorAll('.query-row');
-                queryRows.forEach(row => {
-                    const child = row.getAttribute('data-child');
-                    const parent = row.getAttribute('data-parent');
-                    if (filter === 'all' || child === filter || parent === filter) {
-                        row.style.display = 'block';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            }
-
-            function downloadPDF() {
-                // Select the specific results section to avoid capturing the whole body (nav bar etc)
-                // But user wants "report", so body is fine if we hide non-report elements.
-                const element = document.querySelector('.results-section') || document.body;
-
-                const opt = {
-                    margin: [5, 5, 5, 5], // Tighter margins
-                    filename: 'analysis_report.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } // Landscape for wide tables
-                };
-
-                // Hide interactive elements
-                const btns = document.querySelectorAll('.btn, .btn-download, .upload-area, .home-btn, .filter-controls, button');
-                btns.forEach(b => b.classList.add('pdf-hidden'));
-                const style = document.createElement('style');
-                style.innerHTML = '.pdf-hidden { display: none !important; } .results-section { border: none; margin-top: 0; } body { padding: 0; background: white; }';
-                document.head.appendChild(style);
-
-                html2pdf().set(opt).from(document.body).save().then(() => {
-                    // Restore
-                    btns.forEach(b => b.classList.remove('pdf-hidden'));
-                    document.head.removeChild(style);
-                });
-            }
         </script>
     </body>
 

@@ -93,20 +93,14 @@ def analyze():
                 "Date Columns": ", ".join(d_cols) if d_cols else "None"
             })
 
-        # Generate Join Queries
-        join_queries = data_analyzer.generate_join_queries(relationships)
-        
-        # Inject SQL into relationships for table display
-        for i, rel in enumerate(relationships):
-            if i < len(join_queries):
-                rel['sql_query'] = join_queries[i]['sql']
+
 
         # Save Intermediate Results
         intermediate_data = {
             "relationships": relationships,
             "table_pks": table_pks,
             "date_info": date_info,
-            "join_queries": join_queries
+
         }
         
         intermediate_file = os.path.join(session_folder, "intermediate_results.json")
@@ -122,8 +116,8 @@ def analyze():
                                analysis_done=True,
                                relationships=relationships, 
                                primary_keys=pk_display, 
-                               date_columns=date_info,
-                               join_queries=join_queries)
+                               date_columns=date_info)
+
 
     except Exception as e:
         logging.error(f"Analysis failed: {e}", exc_info=True)
@@ -131,74 +125,9 @@ def analyze():
         return redirect(url_for('index'))
     # finally block removed as cleanup logic depends on whether we want to keep files for re-analysis or not
 
-@app.route('/download/excel')
-def download_excel():
-    session_id = session.get('session_id')
-    if not session_id:
-        flash("No active analysis session found.")
-        return redirect(url_for('index'))
 
-    session_folder = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
-    intermediate_file = os.path.join(session_folder, "intermediate_results.json")
 
-    if not os.path.exists(intermediate_file):
-        flash("Analysis data expired or not found.")
-        return redirect(url_for('index'))
 
-    try:
-        with open(intermediate_file, 'r') as f:
-            data = json.load(f)
-        
-        relationships = data.get('relationships', [])
-        table_pks = data.get('table_pks', {})
-        date_info = data.get('date_info', [])
-
-        report_filename = "relationship_report.xlsx"
-        report_path = os.path.join(session_folder, report_filename)
-        
-        data_analyzer.generate_excel_report(relationships, table_pks, date_info, report_path)
-        
-        return send_file(report_path, as_attachment=True)
-    except Exception as e:
-        logging.error(f"Excel generation failed: {e}")
-        flash("Failed to generate Excel report.")
-        return redirect(url_for('index'))
-
-@app.route('/download/json')
-def download_json():
-    session_id = session.get('session_id')
-    if not session_id:
-        flash("No active analysis session found.")
-        return redirect(url_for('index'))
-
-    session_folder = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
-    intermediate_file = os.path.join(session_folder, "intermediate_results.json")
-
-    if not os.path.exists(intermediate_file):
-        flash("Analysis data expired or not found.")
-        return redirect(url_for('index'))
-    
-    try:
-        with open(intermediate_file, 'r') as f:
-            data = json.load(f)
-        
-        relationships = data.get('relationships', [])
-        table_pks = data.get('table_pks', {})
-        date_info = data.get('date_info', [])
-        
-        json_filename = "analysis_results.json"
-        json_path = os.path.join(session_folder, json_filename)
-        
-        # calling existing generate_json_report or just dumping existing data
-        # data_analyzer.generate_json_report expects specific args, let's just dump our clean structure or reuse the function
-        # reusing function to ensure consistency
-        data_analyzer.generate_json_report(relationships, table_pks, date_info, json_path)
-        
-        return send_file(json_path, as_attachment=True)
-    except Exception as e:
-        logging.error(f"JSON generation failed: {e}")
-        flash("Failed to generate JSON report.")
-        return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)

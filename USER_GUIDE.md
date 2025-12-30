@@ -1,6 +1,6 @@
 # 📊 OCPM Data Relationship Analyzer - User Guide
 
-Hello there! 👋 Welcome to the **Data Relationship Analyzer**. 
+Hello there! 👋 Welcome to the **Data Relationship Analyzer**.
 
 This tool helps you automatically discover relationships between your data tables. Simply upload your files, and we'll do the heavy lifting to find Primary Keys, Foreign Keys, and how your tables connect! 🚀
 
@@ -11,11 +11,11 @@ This tool helps you automatically discover relationships between your data table
 We support a wide range of file formats to make your life easier:
 *   **Excel** (`.xlsx`, `.xls`)
 *   **CSV** (`.csv`)
-*   **JSON** (`.json`) ✨ *New!*
+*   **JSON** (`.json`)
 *   **Tab-Separated** (`.tsv`)
 *   **Text** (`.txt`)
 
-> **Note on Large Files**: We support large CSV and Text files! 🏋️‍♂️ The tool processes them in smart chunks, so you can upload files with millions of rows without crashing your browser or server.
+> **Note on Large Files**: We support large CSV and Text files! 🏋️‍♂️ The tool processes them in smart chunks, so you can upload files with millions of rows without crashing your browser.
 
 ---
 
@@ -34,51 +34,44 @@ We support a wide range of file formats to make your life easier:
 ## 🛠️ Using the Tool
 
 ### 1. Upload Your Files
-*   Click the **"Choose Files"** button.
+*   Click the **"Choose Files"** button (or drag and drop your files into the box).
 *   Select one or multiple files from your computer.
-*   Click **"Upload and Analyze"** button. 
+*   Click the **"Analyze Files"** button.
 *   *Tip: You can select multiple CSVs, JSONs, or Excel sheets at once!*
 
 ### 2. Explore Your Results 🔍
-Once the analysis is done, you'll see a beautiful dashboard:
+Once the analysis is done, you'll see a dashboard with three main sections:
 
-*   **Inferred Relationships Table**:
-    *   This is the star of the show! ⭐ It shows which tables are acting as parents and children.
-    *   **SQL Join Query**: We generate the exact SQL `JOIN` syntax for you.
-    *   **Copy Button**: Click the little "Copy" button next to the SQL query to paste it directly into your database tool! 📋
+#### A. Inferred Relationships
+This is the core of the analysis! ⭐ It shows which tables are connected as parents and children.
+*   **Child Table**: The table containing the foreign key.
+*   **Child Column (FK)**: The column linking to the parent.
+*   **Parent Table**: The table containing the primary key.
+*   **Parent Column (PK)**: The unique identifier in the parent table.
+*   **Cardinality**: The type of relationship (e.g., `n:1` for Many-to-One).
 
-*   **Filter Results**:
-    *   Use the dropdown menu at the top to filter rows by specific tables. This also filters the SQL queries!
+#### B. Primary Key Candidates
+This table lists each of your uploaded files and suggests columns that could serve as **Primary Keys** (unique identifiers for each row).
 
-*   **Other Insights**:
-    *   **Primary Key Candidates**: Potential unique identifiers for your tables.
-    *   **Date Columns**: We identify which columns look like dates. 📅
+#### C. Date Columns
+We automatically scan your data to find columns that contain dates or timestamps, which is useful for timeline analysis. 📅
 
-### 3. Download Reports 📥
-Want to take your data to go?
-*   **Download Excel Report**: Get a full spreadsheet of the analysis.
-*   **Download JSON Relationship**: Get the raw relationship data.
-*   **Download PDF**: Get a clean, professional PDF report of the current view. 📄
-
-### 4. Start Over (Reset) 🔄
-*   Click the **"Home"** button in the top right corner. 🏠
+### 3. Start Over (Reset) 🔄
+*   Click the **"Home"** button in the top left corner. 🏠
 *   This will **clear your session**, remove the uploaded files, and let you start fresh with a clean slate.
 
 ---
 
 ## 🧐 Troubleshooting
 
-**Q: I clicked "Upload" but nothing happened?**
-A: Make sure you selected at least one valid file! If valid, check the terminal for any error messages.
+**Q: I clicked "Analyze Files" but nothing happened?**
+A: Make sure you have selected at least one file!
 
 **Q: My JSON file isn't working!**
 A: Ensure your JSON is structured as a list of records (e.g., `[{"id": 1, "name": "A"}, ...]`). Complex nested structures might need to be flattened first.
 
-**Q: Analysis is taking a while for my big CSV file.**
-A: That's normal! 🐢 For very large files (hundreds of MBs), the tool carefully reads them in chunks to avoid running out of memory. Sit tight, it's working hard!
-
 **Q: The relationships look wrong.**
-A: The tool guesses relationships based on column names (like `CustomerID` matching `ID`) and data overlap. It's a helper, so always double-check with your domain knowledge! 🧠
+A: The tool estimates relationships based on column name matching (like `CustomerID` in one table matching `ID` in another) and data overlap. It's an intelligent assistant, but always use your domain knowledge to verify! 🧠
 
 ---
 
